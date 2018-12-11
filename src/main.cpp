@@ -31,7 +31,7 @@ double world_y_min;
 double world_y_max;
 
 //parameters we should adjust : K, margin, MaxStep
-int margin = 5;
+int margin = 3;
 int K = 2000;
 double MaxStep = 2;
 int waypoint_margin = 24;
@@ -195,7 +195,7 @@ void callback_state(geometry_msgs::PoseWithCovarianceStampedConstPtr msgs){
 
 void set_waypoints()
 {
-    point waypoint_candid[7];
+    point waypoint_candid[10];
 
     // Starting point. (Fixed)
     waypoint_candid[0].x = -3.5;
@@ -206,26 +206,33 @@ void set_waypoints()
     // Set your own waypoints.
     // The car should turn around the outer track once, and come back to the starting point.
     // This is an example.
-    waypoint_candid[1].x = 3.5;
-    waypoint_candid[1].y = 7.0;
-    waypoint_candid[2].x = 2.5;
-    waypoint_candid[2].y = -8.5;
-    waypoint_candid[3].x = -2.5;
-    waypoint_candid[3].y = -8.0;
-    waypoint_candid[4].x = -3.5;
-    waypoint_candid[4].y = 8.5;
+    waypoint_candid[1].x = 1.99;
+    waypoint_candid[1].y = 8.68;
+    waypoint_candid[2].x = 3.70;
+    waypoint_candid[2].y = 4.92;
+    waypoint_candid[3].x = 2.31;
+    waypoint_candid[3].y = -8.57;
+    waypoint_candid[4].x = -2.74;
+    waypoint_candid[4].y = -8.61;
+
+    waypoint_candid[5].x = -3.68;
+    waypoint_candid[5].y = -4.63;
+    waypoint_candid[6].x = -3.75;
+    waypoint_candid[6].y = 6.19;
+    waypoint_candid[7].x = -3.5;
+    waypoint_candid[7].y = 8.5;
 
 
     // Waypoints for arbitrary goal points.
     // TA will change this part before scoring.
     // This is an example.
-    waypoint_candid[5].x = 1.5;
-    waypoint_candid[5].y = 1.5;
-    waypoint_candid[6].x = -2;
-    waypoint_candid[6].y = -9.0;
+    waypoint_candid[8].x = 1.5;
+    waypoint_candid[8].y = 1.5;
+    waypoint_candid[9].x = -2;
+    waypoint_candid[9].y = -9.0;
 
-    int order[] = {0,1,2,3,4,5,6};
-    int order_size = 7;
+    int order[] = {0,1,2,3,4,5,6,7,8,9};
+    int order_size = 10;
 
     for(int i = 0; i < order_size; i++){
         waypoints.push_back(waypoint_candid[order[i]]);
