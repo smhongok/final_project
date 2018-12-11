@@ -32,7 +32,7 @@ double world_y_max;
 
 //parameters we should adjust : K, margin, MaxStep
 int margin = 3;
-int K = 2000;
+int K = 1000;
 double MaxStep = 2;
 int waypoint_margin = 24;
 
@@ -56,7 +56,7 @@ ackermann_msgs::AckermannDriveStamped cmd;
 int state;
 
 //function definition
-void setcmdvel(double v, double w);
+void setcmdvel(double vel, double deg);
 void callback_state(geometry_msgs::PoseWithCovarianceStampedConstPtr msgs);
 void set_waypoints();
 void generate_path_RRT();
@@ -152,7 +152,7 @@ int main(int argc, char** argv){
                 if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.58,2)) {
                     i++;
                 }
-              printf("look_ahead_idx %d\n",look_ahead_idx); 
+              printf("path_now: %.1f %.1f, robot_pose: %.1f %.1f\n",path_now.x, path_now.y, robot_pose.x, robot_pose.y); 
                 if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.8,2)) look_ahead_idx++;
                 if(look_ahead_idx==waypoints.size())
                 {
@@ -232,7 +232,7 @@ void set_waypoints()
     waypoint_candid[9].y = -9.0;
 
     int order[] = {0,1,2,3,4,5,6,7,8,9};
-    int order_size = 10;
+    int order_size = 8;
 
     for(int i = 0; i < order_size; i++){
         waypoints.push_back(waypoint_candid[order[i]]);
