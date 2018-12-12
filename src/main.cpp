@@ -32,7 +32,7 @@ double world_y_max;
 
 //parameters we should adjust : K, margin, MaxStep
 int margin = 3;
-int K = 1000;
+int K = 1500;
 double MaxStep = 2;
 int waypoint_margin = 24;
 
@@ -206,17 +206,17 @@ void set_waypoints()
     // Set your own waypoints.
     // The car should turn around the outer track once, and come back to the starting point.
     // This is an example.
-    waypoint_candid[1].x = 1.99;
-    waypoint_candid[1].y = 8.68;
+    waypoint_candid[1].x = 1.8;
+    waypoint_candid[1].y = 9.1;
     waypoint_candid[2].x = 3.70;
-    waypoint_candid[2].y = 4.92;
-    waypoint_candid[3].x = 2.31;
-    waypoint_candid[3].y = -8.57;
-    waypoint_candid[4].x = -2.74;
-    waypoint_candid[4].y = -8.61;
+    waypoint_candid[2].y = 5.42;
+    waypoint_candid[3].x = 2.41;
+    waypoint_candid[3].y = -8.07;
+    waypoint_candid[4].x = -2.3;
+    waypoint_candid[4].y = -8.41;
 
     waypoint_candid[5].x = -3.68;
-    waypoint_candid[5].y = -4.63;
+    waypoint_candid[5].y = -4.83;
     waypoint_candid[6].x = -3.75;
     waypoint_candid[6].y = 6.19;
     waypoint_candid[7].x = -3.5;
