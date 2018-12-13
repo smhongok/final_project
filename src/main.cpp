@@ -31,7 +31,7 @@ double world_y_min;
 double world_y_max;
 
 //parameters we should adjust : K, margin, MaxStep
-int margin = 3;
+int margin = 2;
 int K = 1000;
 double MaxStep = 2;
 int waypoint_margin = 24;
@@ -64,7 +64,7 @@ void generate_path_RRT();
 int main(int argc, char** argv){
     ros::init(argc, argv, "slam_main");
     ros::NodeHandle n;
-	int i=0;
+	int i=1;
     // Initialize topics
     ros::Publisher cmd_vel_pub = n.advertise<ackermann_msgs::AckermannDriveStamped>("/vesc/high_level/ackermann_cmd_mux/input/nav_0",1);
     
@@ -75,7 +75,7 @@ int main(int argc, char** argv){
     // FSM
     state = INIT;
     bool running = true;
-    	int look_ahead_idx=0;
+    	int look_ahead_idx=1;
     ros::Rate control_rate(60);
 
     while(running){
@@ -134,7 +134,19 @@ int main(int argc, char** argv){
               printf("look_ahead_idx %d",look_ahead_idx);
 //              printf(" path x , y , th %2f, %2f, %2f \n", path_RRT[i].x,path_RRT[i].y,path_RRT[i].th);*/
 //              printf("robot pose x, y, th %2f, %2f, %2f\n",robot_pose.x,robot_pose.y,robot_pose.th);
-                point path_now;
+                if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.2,2)) {
+                    i++;
+                }
+
+		if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.60,2)) look_ahead_idx++;
+                if(look_ahead_idx==waypoints.size())
+                {
+                    state=FINISH;
+                    break;
+                }
+
+
+		point path_now;
                 path_now.x = path_RRT[i].x;
                 path_now.y = path_RRT[i].y;
                 path_now.th = path_RRT[i].th;
@@ -149,17 +161,7 @@ int main(int argc, char** argv){
 //              printf("path_RRT[i].x , y %.2f  %.2f \n ", path_RRT[i].x,path_RRT[i].y);
                 setcmdvel(speed,steering);
                 cmd_vel_pub.publish(cmd);
-                if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.58,2)) {
-                    i++;
-                }
-              printf("path_now: %.1f %.1f, robot_pose: %.1f %.1f\n",path_now.x, path_now.y, robot_pose.x, robot_pose.y); 
-                if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.8,2)) look_ahead_idx++;
-                if(look_ahead_idx==waypoints.size())
-                {
-                    state=FINISH;
-                    break;
-                }
-
+                printf("path_now: %.1f %.1f, robot_pose: %.1f %.1f look_ahead_idx: %d/%d\n",path_now.x, path_now.y, robot_pose.x, robot_pose.y, look_ahead_idx, waypoints.size()-1); 
 
 				ros::spinOnce();
 				control_rate.sleep();
@@ -190,7 +192,7 @@ void callback_state(geometry_msgs::PoseWithCovarianceStampedConstPtr msgs){
     robot_pose.x = msgs->pose.pose.position.x;
     robot_pose.y = msgs->pose.pose.position.y;
     robot_pose.th = tf::getYaw(msgs->pose.pose.orientation);
-    //printf("x,y : %f,%f \n",robot_pose.x,robot_pose.y);
+    //printf("th : %.2f\n",robot_pose.th);
 }
 
 void set_waypoints()
@@ -232,7 +234,7 @@ void set_waypoints()
     waypoint_candid[9].y = -9.0;
 
     int order[] = {0,1,2,3,4,5,6,7,8,9};
-    int order_size = 8;
+    int order_size = 10;
 
     for(int i = 0; i < order_size; i++){
         waypoints.push_back(waypoint_candid[order[i]]);
