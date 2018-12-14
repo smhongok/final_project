@@ -31,9 +31,9 @@ double world_y_min;
 double world_y_max;
 
 //parameters we should adjust : K, margin, MaxStep
-int margin = 2;
-int K = 1000;
-double MaxStep = 2;
+int margin = 3;
+int K = 2500;
+double MaxStep = 5;
 int waypoint_margin = 24;
 
 //way points
@@ -75,7 +75,7 @@ int main(int argc, char** argv){
     // FSM
     state = INIT;
     bool running = true;
-    	int look_ahead_idx=1;
+    	int look_ahead_idx=0;
     ros::Rate control_rate(60);
 
     while(running){
@@ -133,35 +133,32 @@ int main(int argc, char** argv){
 /*              printf("start while & i : %d\n",i);
               printf("look_ahead_idx %d",look_ahead_idx);
 //              printf(" path x , y , th %2f, %2f, %2f \n", path_RRT[i].x,path_RRT[i].y,path_RRT[i].th);*/
-//              printf("robot pose x, y, th %2f, %2f, %2f\n",robot_pose.x,robot_pose.y,robot_pose.th);
-                if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.2,2)) {
+              printf("robot pose x, y, th %2f, %2f, %2f\n",robot_pose.x,robot_pose.y,robot_pose.th);
+                point path_now;
+                path_now.x = path_RRT[i].x;
+                path_now.y = path_RRT[i].y;
+                path_now.th = path_RRT[i].th;
+                float ctrl = pid_ctrl.get_control(robot_pose,path_now);
+
+                float speed= 0.9 + 1/fabs(ctrl)/5;
+                if(speed>1.0) speed=1.0;
+                float max_steering = (0.45/speed + 0.6 < 1.1)? 0.45/speed + 0.6 : 1.1;
+                float steering = ctrl*max_steering/4;
+//              printf("ctrl %f \n", steering);
+//              printf("error , error_sum , error_diff :  %.2f  %.2f  %.2f \n",pid_ctrl.error,pid_ctrl.error_diff,pid_ctrl.error_sum  );
+//              printf("path_RRT[i].x , y %.2f  %.2f \n ", path_RRT[i].x,path_RRT[i].y);
+                setcmdvel(speed,steering);
+                cmd_vel_pub.publish(cmd);
+                if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.25,2)) {
                     i++;
                 }
-
-		if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.60,2)) look_ahead_idx++;
+                if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.53,2)) look_ahead_idx++;
                 if(look_ahead_idx==waypoints.size())
                 {
                     state=FINISH;
                     break;
                 }
 
-
-		point path_now;
-                path_now.x = path_RRT[i].x;
-                path_now.y = path_RRT[i].y;
-                path_now.th = path_RRT[i].th;
-
-                float ctrl = pid_ctrl.get_control(robot_pose,path_now);
-                float speed= 0.9 + 1/fabs(ctrl)/5;
-                if(speed>1.0) speed=1.0;
-                float max_steering = (0.45/speed + 0.6 < 1.18)? 0.45/speed + 0.6 : 1.18;
-                float steering = ctrl*max_steering/3;
-//              printf("ctrl %f \n", steering);
-//              printf("error , error_sum , error_diff :  %.2f  %.2f  %.2f \n",pid_ctrl.error,pid_ctrl.error_diff,pid_ctrl.error_sum  );
-//              printf("path_RRT[i].x , y %.2f  %.2f \n ", path_RRT[i].x,path_RRT[i].y);
-                setcmdvel(speed,steering);
-                cmd_vel_pub.publish(cmd);
-                printf("path_now: %.1f %.1f, robot_pose: %.1f %.1f look_ahead_idx: %d/%d\n",path_now.x, path_now.y, robot_pose.x, robot_pose.y, look_ahead_idx, waypoints.size()-1); 
 
 				ros::spinOnce();
 				control_rate.sleep();
@@ -192,7 +189,7 @@ void callback_state(geometry_msgs::PoseWithCovarianceStampedConstPtr msgs){
     robot_pose.x = msgs->pose.pose.position.x;
     robot_pose.y = msgs->pose.pose.position.y;
     robot_pose.th = tf::getYaw(msgs->pose.pose.orientation);
-    //printf("th : %.2f\n",robot_pose.th);
+    //printf("x,y : %f,%f \n",robot_pose.x,robot_pose.y);
 }
 
 void set_waypoints()
@@ -208,33 +205,34 @@ void set_waypoints()
     // Set your own waypoints.
     // The car should turn around the outer track once, and come back to the starting point.
     // This is an example.
-    waypoint_candid[1].x = 1.99;
-    waypoint_candid[1].y = 8.68;
-    waypoint_candid[2].x = 3.70;
-    waypoint_candid[2].y = 4.92;
-    waypoint_candid[3].x = 2.31;
-    waypoint_candid[3].y = -8.57;
-    waypoint_candid[4].x = -2.74;
-    waypoint_candid[4].y = -8.61;
 
-    waypoint_candid[5].x = -3.68;
-    waypoint_candid[5].y = -4.63;
-    waypoint_candid[6].x = -3.75;
-    waypoint_candid[6].y = 6.19;
-    waypoint_candid[7].x = -3.5;
-    waypoint_candid[7].y = 8.5;
+	waypoint_candid[1].x = 1.0;
+	waypoint_candid[1].y = 8.5;
+
+    waypoint_candid[2].x = 3.90;
+    waypoint_candid[2].y = 4.5;
+    waypoint_candid[3].x = 3.90;
+    waypoint_candid[3].y = -5.5;
+    waypoint_candid[4].x = -3.7;
+    waypoint_candid[4].y = -5.5;
+
+    waypoint_candid[5].x = -3.5;
+    waypoint_candid[5].y = 8.5;
 
 
     // Waypoints for arbitrary goal points.
     // TA will change this part before scoring.
     // This is an example.
-    waypoint_candid[8].x = 1.5;
-    waypoint_candid[8].y = 1.5;
-    waypoint_candid[9].x = -2;
-    waypoint_candid[9].y = -9.0;
+    waypoint_candid[6].x = 1.5;
+    waypoint_candid[6].y = 1.5;
+    waypoint_candid[7].x = -2;
+	waypoint_candid[7].y = -8.5;
 
-    int order[] = {0,1,2,3,4,5,6,7,8,9};
-    int order_size = 10;
+    waypoint_candid[8].x = 2;
+    waypoint_candid[8].y = 8.0;
+
+    int order[] = {0,1,2,3,4,5,6,7,8};
+    int order_size = 9;
 
     for(int i = 0; i < order_size; i++){
         waypoints.push_back(waypoint_candid[order[i]]);
@@ -265,7 +263,7 @@ void generate_path_RRT()
             rrtTree *tree = new rrtTree(lastp, waypoints[i+1], map, map_origin_x, map_origin_y, res, margin);
             tree->generateRRT(world_x_max, world_x_min, world_y_max, world_y_min, K, MaxStep);
             std::vector<traj> vec = tree->backtracking_traj();
-			if( (vec.begin()->x-waypoints[i+1].x)*(vec.begin()->x-waypoints[i+1].x)+(vec.begin()->y-waypoints[i+1].y)*(vec.begin()->y-waypoints[i+1].y) > 0.04 && i>0 ){
+			if( (vec.begin()->x-waypoints[i+1].x)*(vec.begin()->x-waypoints[i+1].x)+(vec.begin()->y-waypoints[i+1].y)*(vec.begin()->y-waypoints[i+1].y) > 0.09 && i>0 ){
    			    printf("!!!REFIND THE WAY\n");
 			    printf(" x y %.2f %.2f waypoints %.2f %.2f\n", vec.begin()->x, vec.begin()->y,waypoints[i+1].x, waypoints[i+1].y);
 			    if(i>0){ 
@@ -273,7 +271,10 @@ void generate_path_RRT()
 			 		lastp.th = entering[i+1].th;
 			 		lastp.x = entering[i+1].x;
 			 		lastp.y = entering[i+1].y;
-
+//					tree->visualizeTree();
+//	    	    	std::reverse(vec.begin(),vec.end());
+//					tree->visualizeTree(vec);
+//					sleep(1);
  					for(int j=0;j<path_length[i+1];j++) path_RRT.pop_back();
 		    	}
 			}
