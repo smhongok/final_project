@@ -32,10 +32,10 @@ double world_y_max;
 
 //parameters we should adjust : K, margin, MaxStep
 int margin = 3;
-int K = 2500;
+int K = 3000;
 double MaxStep = 5;
 int waypoint_margin = 24;
-
+int now_finish = 0;
 //way points
 std::vector<point> waypoints;
 
@@ -139,20 +139,18 @@ int main(int argc, char** argv){
                 path_now.y = path_RRT[i].y;
                 path_now.th = path_RRT[i].th;
                 float ctrl = pid_ctrl.get_control(robot_pose,path_now);
-
-                float speed= 0.9 + 1/fabs(ctrl)/5;
-                if(speed>1.0) speed=1.0;
-                float max_steering = (0.45/speed + 0.6 < 1.1)? 0.45/speed + 0.6 : 1.1;
-                float steering = ctrl*max_steering/4;
+				float speed=1.0;
+//                float max_steering = (0.45/speed + 0.6 < 1.1)? 0.45/speed + 0.6 : 1.1;
+                float steering = ctrl*1.0/4;
 //              printf("ctrl %f \n", steering);
 //              printf("error , error_sum , error_diff :  %.2f  %.2f  %.2f \n",pid_ctrl.error,pid_ctrl.error_diff,pid_ctrl.error_sum  );
 //              printf("path_RRT[i].x , y %.2f  %.2f \n ", path_RRT[i].x,path_RRT[i].y);
                 setcmdvel(speed,steering);
                 cmd_vel_pub.publish(cmd);
-                if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.25,2)) {
+                if(pow(path_RRT[i].x-robot_pose.x,2)+pow(path_RRT[i].y-robot_pose.y,2)<pow(0.35,2)) {
                     i++;
                 }
-                if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.53,2)) look_ahead_idx++;
+                if(pow(waypoints[look_ahead_idx].x-robot_pose.x,2)+pow(waypoints[look_ahead_idx].y-robot_pose.y,2)<pow(0.65,2)) look_ahead_idx++;
                 if(look_ahead_idx==waypoints.size())
                 {
                     state=FINISH;
@@ -194,7 +192,7 @@ void callback_state(geometry_msgs::PoseWithCovarianceStampedConstPtr msgs){
 
 void set_waypoints()
 {
-    point waypoint_candid[10];
+    point waypoint_candid[11];
 
     // Starting point. (Fixed)
     waypoint_candid[0].x = -3.5;
@@ -206,7 +204,7 @@ void set_waypoints()
     // The car should turn around the outer track once, and come back to the starting point.
     // This is an example.
 
-	waypoint_candid[1].x = 1.0;
+	waypoint_candid[1].x = -0.9;
 	waypoint_candid[1].y = 8.5;
 
     waypoint_candid[2].x = 3.90;
@@ -225,14 +223,23 @@ void set_waypoints()
     // This is an example.
     waypoint_candid[6].x = 1.5;
     waypoint_candid[6].y = 1.5;
+
     waypoint_candid[7].x = -2;
-	waypoint_candid[7].y = -8.5;
+    waypoint_candid[7].y = -8.5;
+
 
     waypoint_candid[8].x = 2;
     waypoint_candid[8].y = 8.0;
 
-    int order[] = {0,1,2,3,4,5,6,7,8};
-    int order_size = 9;
+    waypoint_candid[9].x = -0.5;
+    waypoint_candid[9].y = 0.3;
+
+
+    waypoint_candid[10].x = 3.9;
+    waypoint_candid[10].y = -5.5;
+
+    int order[] = {0,1,2,3,4,5,6,7,8,9,10};
+    int order_size = 11;
 
     for(int i = 0; i < order_size; i++){
         waypoints.push_back(waypoint_candid[order[i]]);
@@ -256,17 +263,19 @@ void generate_path_RRT()
 		entering[0].th=waypoints[0].th;
 		entering[0].x=waypoints[0].x;
 		entering[0].y=waypoints[0].y;
-
+		int cnt=0;
         for(int i=0; i<waypoints.size()-1; i++){
 //			lastp.x=waypoints[i].x;
 //            lastp.y=waypoints[i].y;
+			if(i==now_finish) cnt++;
             rrtTree *tree = new rrtTree(lastp, waypoints[i+1], map, map_origin_x, map_origin_y, res, margin);
             tree->generateRRT(world_x_max, world_x_min, world_y_max, world_y_min, K, MaxStep);
             std::vector<traj> vec = tree->backtracking_traj();
 			if( (vec.begin()->x-waypoints[i+1].x)*(vec.begin()->x-waypoints[i+1].x)+(vec.begin()->y-waypoints[i+1].y)*(vec.begin()->y-waypoints[i+1].y) > 0.09 && i>0 ){
+
    			    printf("!!!REFIND THE WAY\n");
 			    printf(" x y %.2f %.2f waypoints %.2f %.2f\n", vec.begin()->x, vec.begin()->y,waypoints[i+1].x, waypoints[i+1].y);
-			    if(i>0){ 
+			    if((i>0 && now_finish < i) || cnt>7){ 
 					i=i-2; 
 			 		lastp.th = entering[i+1].th;
 			 		lastp.x = entering[i+1].x;
@@ -274,12 +283,19 @@ void generate_path_RRT()
 //					tree->visualizeTree();
 //	    	    	std::reverse(vec.begin(),vec.end());
 //					tree->visualizeTree(vec);
-//					sleep(1);
+//					sleep(0.1);
  					for(int j=0;j<path_length[i+1];j++) path_RRT.pop_back();
 		    	}
+				else if(now_finish == i)
+				{
+					cnt++;
+					i--;
+				}
 			}
 //                std::reverse(vec.begin(),vec.end());
 			else{
+				cnt=0;
+				now_finish=i;
 		    	lastp.x = vec.begin()->x;
                 lastp.y = vec.begin()->y;
                 lastp.th = vec.begin()->th;
