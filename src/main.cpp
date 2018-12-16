@@ -139,7 +139,7 @@ int main(int argc, char** argv){
                 path_now.y = path_RRT[i].y;
                 path_now.th = path_RRT[i].th;
                 float ctrl = pid_ctrl.get_control(robot_pose,path_now);
-		float speed=0.9+1/(fabs(ctrl))/3;
+		float speed=0.8+1/(fabs(ctrl))/8;
 		if(speed  > 2.0) speed = 2.0;
                 float max_steering = (0.45/speed + 0.6 < 1.1)? 0.45/speed + 0.6 : 1.1;
                 float steering = ctrl*max_steering/4;
